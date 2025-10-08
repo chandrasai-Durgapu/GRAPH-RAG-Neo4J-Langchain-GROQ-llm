@@ -86,9 +86,9 @@ GROQ_API_KEY=your_groq_api_key
 ---
 ## Run the Test Application
 ```bash
-python test.py
+python src/main.py
 ```
 ---
-FastAPI part is pending
+
 
 
