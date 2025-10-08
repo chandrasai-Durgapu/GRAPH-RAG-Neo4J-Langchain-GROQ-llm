@@ -1,0 +1,349 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script>function neighbourhoodHighlight(params) {
+  // console.log("in nieghbourhoodhighlight");
+  allNodes = nodes.get({ returnType: "Object" });
+  // originalNodes = JSON.parse(JSON.stringify(allNodes));
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    highlightActive = true;
+    var i, j;
+    var selectedNode = params.nodes[0];
+    var degrees = 2;
+
+    // mark all nodes as hard to read.
+    for (let nodeId in allNodes) {
+      // nodeColors[nodeId] = allNodes[nodeId].color;
+      allNodes[nodeId].color = "rgba(200,200,200,0.5)";
+      if (allNodes[nodeId].hiddenLabel === undefined) {
+        allNodes[nodeId].hiddenLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+    var connectedNodes = network.getConnectedNodes(selectedNode);
+    var allConnectedNodes = [];
+
+    // get the second degree nodes
+    for (i = 1; i < degrees; i++) {
+      for (j = 0; j < connectedNodes.length; j++) {
+        allConnectedNodes = allConnectedNodes.concat(
+          network.getConnectedNodes(connectedNodes[j])
+        );
+      }
+    }
+
+    // all second degree nodes get a different color and their label back
+    for (i = 0; i < allConnectedNodes.length; i++) {
+      // allNodes[allConnectedNodes[i]].color = "pink";
+      allNodes[allConnectedNodes[i]].color = "rgba(150,150,150,0.75)";
+      if (allNodes[allConnectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[allConnectedNodes[i]].label =
+          allNodes[allConnectedNodes[i]].hiddenLabel;
+        allNodes[allConnectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // all first degree nodes get their own color and their label back
+    for (i = 0; i < connectedNodes.length; i++) {
+      // allNodes[connectedNodes[i]].color = undefined;
+      allNodes[connectedNodes[i]].color = nodeColors[connectedNodes[i]];
+      if (allNodes[connectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[connectedNodes[i]].label =
+          allNodes[connectedNodes[i]].hiddenLabel;
+        allNodes[connectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // the main node gets its own color and its label back.
+    // allNodes[selectedNode].color = undefined;
+    allNodes[selectedNode].color = nodeColors[selectedNode];
+    if (allNodes[selectedNode].hiddenLabel !== undefined) {
+      allNodes[selectedNode].label = allNodes[selectedNode].hiddenLabel;
+      allNodes[selectedNode].hiddenLabel = undefined;
+    }
+  } else if (highlightActive === true) {
+    // console.log("highlightActive was true");
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      // allNodes[nodeId].color = "purple";
+      allNodes[nodeId].color = nodeColors[nodeId];
+      // delete allNodes[nodeId].color;
+      if (allNodes[nodeId].hiddenLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
+        allNodes[nodeId].hiddenLabel = undefined;
+      }
+    }
+    highlightActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    // console.log("Nothing was selected");
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        // allNodes[nodeId].color = {};
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function filterHighlight(params) {
+  allNodes = nodes.get({ returnType: "Object" });
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    filterActive = true;
+    let selectedNodes = params.nodes;
+
+    // hiding all nodes and saving the label
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = true;
+      if (allNodes[nodeId].savedLabel === undefined) {
+        allNodes[nodeId].savedLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+
+    for (let i=0; i < selectedNodes.length; i++) {
+      allNodes[selectedNodes[i]].hidden = false;
+      if (allNodes[selectedNodes[i]].savedLabel !== undefined) {
+        allNodes[selectedNodes[i]].label = allNodes[selectedNodes[i]].savedLabel;
+        allNodes[selectedNodes[i]].savedLabel = undefined;
+      }
+    }
+
+  } else if (filterActive === true) {
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = false;
+      if (allNodes[nodeId].savedLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].savedLabel;
+        allNodes[nodeId].savedLabel = undefined;
+      }
+    }
+    filterActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function selectNode(nodes) {
+  network.selectNodes(nodes);
+  neighbourhoodHighlight({ nodes: nodes });
+  return nodes;
+}
+
+function selectNodes(nodes) {
+  network.selectNodes(nodes);
+  filterHighlight({nodes: nodes});
+  return nodes;
+}
+
+function highlightFilter(filter) {
+  let selectedNodes = []
+  let selectedProp = filter['property']
+  if (filter['item'] === 'node') {
+    let allNodes = nodes.get({ returnType: "Object" });
+    for (let nodeId in allNodes) {
+      if (allNodes[nodeId][selectedProp] && filter['value'].includes((allNodes[nodeId][selectedProp]).toString())) {
+        selectedNodes.push(nodeId)
+      }
+    }
+  }
+  else if (filter['item'] === 'edge'){
+    let allEdges = edges.get({returnType: 'object'});
+    // check if the selected property exists for selected edge and select the nodes connected to the edge
+    for (let edge in allEdges) {
+      if (allEdges[edge][selectedProp] && filter['value'].includes((allEdges[edge][selectedProp]).toString())) {
+        selectedNodes.push(allEdges[edge]['from'])
+        selectedNodes.push(allEdges[edge]['to'])
+      }
+    }
+  }
+  selectNodes(selectedNodes)
+}</script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+            
+            
+            
+            
+            
+
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 400px;
+                 height: 300px;
+                 background-color: #ffffff;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "#97c2fc", "id": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:0", "label": "Document", "shape": "dot", "title": "{\u0027summary\u0027: \u0027Elizabeth I (7 September 1533 \u2013 24 March 1603) was Queen of England and Ireland from 17 November 1558 until her death in 1603. She was the last and longest reigning monarch of the House of Tudor. Her eventful reign, and its effect on history and culture, gave name to the Elizabethan era.\\nElizabeth was the only surviving child of Henry VIII and his second wife, Anne Boleyn. When Elizabeth was two years old, her parents\\\u0027 marriage was annulled, her mother was executed, and Elizabeth was declared illegitimate. Henry restored her to the line of succession when she was 10. After Henry\\\u0027s death in 1547, Elizabeth\\\u0027s younger half-brother Edward VI ruled until his own death in 1553, bequeathing the crown to a Protestant cousin, Lady Jane Grey, and ignoring the claims of his two half-sisters, Mary and Elizabeth, despite statutes to the contrary. Edward\\\u0027s will was quickly set aside and the Catholic Mary became queen, deposing Jane. During Mary\\\u0027s reign, Elizabeth was imprisoned for nearly a year on suspicion of supporting Protestant rebels.\\nUpon Mary\\\u0027s 1558 death, Elizabeth succeeded to the throne and set out to rule by good counsel. She depended heavily on a group of trusted advisers led by William Cecil, whom she created Baron Burghley. One of her first actions as queen was the establishment of an English Protestant church, of which she became the supreme governor. This arrangement, later named the Elizabethan Religious Settlement, would evolve into the Church of England. It was expected that Elizabeth would marry and produce an heir; however, despite numerous courtships, she never did. Because of this she is sometimes referred to as the \"Virgin Queen\". She was succeeded by her cousin, James VI of Scotland.\\nIn government, Elizabeth was more moderate than her father and siblings had been. One of her mottoes was video et taceo (\"I see and keep silent\"). In religion, she was relatively tolerant and avoided systematic persecution. After the pope declared her illegitimate in 1570, which in theory released English Catholics from allegiance to her, several conspiracies threatened her life, all of which were defeated with the help of her ministers\\\u0027 secret service, run by Francis Walsingham. Elizabeth was cautious in foreign affairs, manoeuvring between the major powers of France and Spain. She half-heartedly supported a number of ineffective, poorly resourced military campaigns in the Netherlands, France, and Ireland. By the mid-1580s, England could no longer avoid war with Spain.\\nAs she grew older, Elizabeth became celebrated for her virginity. A cult of personality grew around her which was celebrated in the portraits, pageants, and literature of the day. The Elizabethan era is famous for the flourishing of English drama, led by playwrights such as William Shakespeare and Christopher Marlowe, the prowess of English maritime adventurers, such as Francis Drake and Walter Raleigh, and for the defeat of the Spanish Armada. Some historians depict Elizabeth as a short-tempered, sometimes indecisive ruler, who enjoyed more than her fair share of luck. Towards the end of her reign, a series of economic and military problems weakened her popularity. Elizabeth is acknowledged as a charismatic performer and a dogged survivor in an era when government was ramshackle and limited, and when monarchs in neighbouring countries faced internal problems and religious civil wars that jeopardised their thrones. After the short, disastrous reigns of her half-siblings, her 44 years on the throne provided welcome stability for the kingdom and helped to forge a sense of national identity.\\n\\n\u0027, \u0027id\u0027: \u0027045390d8231e29ce795ddcc8690f8e19\u0027, \u0027text\u0027: \u0027Elizabeth I (7 September 1533 \u2013 24 March 1603) was Queen of England and Ireland from 17 November 1558 until her death in 1603. She was the last and longest reigning monarch of the House of Tudor. Her eventful reign, and its effect on history and culture, gave name to the Elizabethan era.\\nElizabeth was the only surviving child of Henry VIII and his second wife, Anne Boleyn. When Elizabeth was two years old, her parents\\\u0027 marriage was annulled, her mother was executed, and Elizabeth was declared illegitimate. Henry restored her to the line of succession when she was 10. After Henry\\\u0027s death in 1547, Elizabeth\\\u0027s younger half-brother Edward VI ruled until his own death in 1553, bequeathing the crown to a Protestant cousin, Lady Jane Grey, and ignoring the claims of his two half-sisters, Mary and Elizabeth, despite statutes to the contrary. Edward\\\u0027s will was quickly set aside and the Catholic Mary became queen, deposing Jane. During Mary\\\u0027s reign, Elizabeth was imprisoned for nearly a year on suspicion of supporting Protestant rebels.\\nUpon Mary\\\u0027s 1558 death, Elizabeth succeeded to the throne and set out to rule by good counsel. She depended heavily on a group of trusted advisers led by William Cecil, whom she created Baron Burghley. One of her first actions as queen was the establishment of an English Protestant church, of which she became the supreme governor. This arrangement, later named the Elizabethan Religious Settlement, would evolve into the Church of England. It was expected that Elizabeth would marry and produce an heir; however, despite numerous courtships, she never did. Because of this she is sometimes referred to as the \"Virgin Queen\". She was succeeded by her cousin, James VI of Scotland.\\nIn government, Elizabeth was more moderate than her father and siblings had been. One of her mottoes was video et taceo (\"I see and keep silent\"). In religion, she was relatively tolerant and avoided systematic persecution. After the pope declared her illegitimate in 1570, which in theory released English Catholics from allegiance to her, several conspiracies threatened her life, all of which were defeated with the help of her ministers\\\u0027 secret service, run by Francis Walsingham. Elizabeth was cautious in foreign affairs, manoeuvring between the major powers of France and Spain. She half-heartedly supported a number of ineffective, poorly resourced military campaigns in the Netherlands, France, and Ireland. By the mid-1580s, England could no\u0027, \u0027source\u0027: \u0027https://en.wikipedia.org/wiki/Elizabeth_I\u0027, \u0027title\u0027: \u0027Elizabeth I\u0027}"}, {"color": "#97c2fc", "id": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:1", "label": "Person, Monarch, __Entity__", "shape": "dot", "title": "{\u0027id\u0027: \u0027Elizabeth I\u0027}"}, {"color": "#97c2fc", "id": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:2", "label": "Person, Monarch, __Entity__", "shape": "dot", "title": "{\u0027id\u0027: \u0027Henry Viii\u0027}"}, {"color": "#97c2fc", "id": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:3", "label": "Person, __Entity__", "shape": "dot", "title": "{\u0027id\u0027: \u0027Anne Boleyn\u0027}"}, {"color": "#97c2fc", "id": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:4", "label": "Person, Monarch, __Entity__", "shape": "dot", "title": "{\u0027id\u0027: \u0027Edward Vi\u0027}"}, {"color": "#97c2fc", "id": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:5", "label": "Person, __Entity__", "shape": "dot", "title": "{\u0027id\u0027: \u0027Lady Jane Grey\u0027}"}, {"color": "#97c2fc", "id": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:6", "label": "Person, __Entity__", "shape": "dot", "title": "{\u0027id\u0027: \u0027Mary\u0027}"}, {"color": "#97c2fc", "id": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:7", "label": "Person, __Entity__", "shape": "dot", "title": "{\u0027id\u0027: \u0027William Cecil\u0027}"}, {"color": "#97c2fc", "id": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:8", "label": "Person, __Entity__", "shape": "dot", "title": "{\u0027id\u0027: \u0027James Vi Of Scotland\u0027}"}, {"color": "#97c2fc", "id": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:9", "label": "Person, __Entity__", "shape": "dot", "title": "{\u0027id\u0027: \u0027Francis Walsingham\u0027}"}, {"color": "#97c2fc", "id": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:10", "label": "Dynasty, __Entity__", "shape": "dot", "title": "{\u0027id\u0027: \u0027House Of Tudor\u0027}"}, {"color": "#97c2fc", "id": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:11", "label": "Country, __Entity__", "shape": "dot", "title": "{\u0027id\u0027: \u0027England\u0027}"}, {"color": "#97c2fc", "id": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:12", "label": "Country, __Entity__", "shape": "dot", "title": "{\u0027id\u0027: \u0027Ireland\u0027}"}, {"color": "#97c2fc", "id": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:13", "label": "Organization, __Entity__", "shape": "dot", "title": "{\u0027id\u0027: \u0027Church Of England\u0027}"}, {"color": "#97c2fc", "id": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:79", "label": "Person, __Entity__", "shape": "dot", "title": "{\u0027id\u0027: \u0027James Vi And I\u0027}"}, {"color": "#97c2fc", "id": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:15", "label": "Person, __Entity__", "shape": "dot", "title": "{\u0027id\u0027: \u0027Elizabeth\u0027}"}, {"color": "#97c2fc", "id": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:66", "label": "Person, Monarch, __Entity__", "shape": "dot", "title": "{\u0027id\u0027: \u0027Mary I\u0027}"}, {"color": "#97c2fc", "id": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:61", "label": "Person, __Entity__", "shape": "dot", "title": "{\u0027id\u0027: \u0027Ednyfed Fychan\u0027}"}, {"color": "#97c2fc", "id": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:62", "label": "Noble family, __Entity__", "shape": "dot", "title": "{\u0027id\u0027: \u0027Tudors Of Penmynydd\u0027}"}, {"color": "#97c2fc", "id": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:63", "label": "Person, __Entity__", "shape": "dot", "title": "{\u0027id\u0027: \u0027Catherine Of Valois\u0027}"}, {"color": "#97c2fc", "id": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:64", "label": "Dynasty, __Entity__", "shape": "dot", "title": "{\u0027id\u0027: \u0027House Of Lancaster\u0027}"}, {"color": "#97c2fc", "id": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:67", "label": "Dynasty, __Entity__", "shape": "dot", "title": "{\u0027id\u0027: \u0027House Of Plantagenet\u0027}"}, {"color": "#97c2fc", "id": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:76", "label": "Principality, __Entity__", "shape": "dot", "title": "{\u0027id\u0027: \u0027Principality Of Wales\u0027}"}, {"color": "#97c2fc", "id": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:71", "label": "Kingdom, __Entity__", "shape": "dot", "title": "{\u0027id\u0027: \u0027Kingdom Of Ireland\u0027}"}, {"color": "#97c2fc", "id": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:77", "label": "Kingdom, __Entity__", "shape": "dot", "title": "{\u0027id\u0027: \u0027Kingdom Of France\u0027}"}, {"color": "#97c2fc", "id": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:14", "label": "Document", "shape": "dot", "title": "{\u0027summary\u0027: \u0027Elizabeth I (7 September 1533 \u2013 24 March 1603) was Queen of England and Ireland from 17 November 1558 until her death in 1603. She was the last and longest reigning monarch of the House of Tudor. Her eventful reign, and its effect on history and culture, gave name to the Elizabethan era.\\nElizabeth was the only surviving child of Henry VIII and his second wife, Anne Boleyn. When Elizabeth was two years old, her parents\\\u0027 marriage was annulled, her mother was executed, and Elizabeth was declared illegitimate. Henry restored her to the line of succession when she was 10. After Henry\\\u0027s death in 1547, Elizabeth\\\u0027s younger half-brother Edward VI ruled until his own death in 1553, bequeathing the crown to a Protestant cousin, Lady Jane Grey, and ignoring the claims of his two half-sisters, Mary and Elizabeth, despite statutes to the contrary. Edward\\\u0027s will was quickly set aside and the Catholic Mary became queen, deposing Jane. During Mary\\\u0027s reign, Elizabeth was imprisoned for nearly a year on suspicion of supporting Protestant rebels.\\nUpon Mary\\\u0027s 1558 death, Elizabeth succeeded to the throne and set out to rule by good counsel. She depended heavily on a group of trusted advisers led by William Cecil, whom she created Baron Burghley. One of her first actions as queen was the establishment of an English Protestant church, of which she became the supreme governor. This arrangement, later named the Elizabethan Religious Settlement, would evolve into the Church of England. It was expected that Elizabeth would marry and produce an heir; however, despite numerous courtships, she never did. Because of this she is sometimes referred to as the \"Virgin Queen\". She was succeeded by her cousin, James VI of Scotland.\\nIn government, Elizabeth was more moderate than her father and siblings had been. One of her mottoes was video et taceo (\"I see and keep silent\"). In religion, she was relatively tolerant and avoided systematic persecution. After the pope declared her illegitimate in 1570, which in theory released English Catholics from allegiance to her, several conspiracies threatened her life, all of which were defeated with the help of her ministers\\\u0027 secret service, run by Francis Walsingham. Elizabeth was cautious in foreign affairs, manoeuvring between the major powers of France and Spain. She half-heartedly supported a number of ineffective, poorly resourced military campaigns in the Netherlands, France, and Ireland. By the mid-1580s, England could no longer avoid war with Spain.\\nAs she grew older, Elizabeth became celebrated for her virginity. A cult of personality grew around her which was celebrated in the portraits, pageants, and literature of the day. The Elizabethan era is famous for the flourishing of English drama, led by playwrights such as William Shakespeare and Christopher Marlowe, the prowess of English maritime adventurers, such as Francis Drake and Walter Raleigh, and for the defeat of the Spanish Armada. Some historians depict Elizabeth as a short-tempered, sometimes indecisive ruler, who enjoyed more than her fair share of luck. Towards the end of her reign, a series of economic and military problems weakened her popularity. Elizabeth is acknowledged as a charismatic performer and a dogged survivor in an era when government was ramshackle and limited, and when monarchs in neighbouring countries faced internal problems and religious civil wars that jeopardised their thrones. After the short, disastrous reigns of her half-siblings, her 44 years on the throne provided welcome stability for the kingdom and helped to forge a sense of national identity.\\n\\n\u0027, \u0027id\u0027: \u002705590f0b4f24822d1f435edcc7620343\u0027, \u0027text\u0027: \" poorly resourced military campaigns in the Netherlands, France, and Ireland. By the mid-1580s, England could no longer avoid war with Spain.\\nAs she grew older, Elizabeth became celebrated for her virginity. A cult of personality grew around her which was celebrated in the portraits, pageants, and literature of the day. The Elizabethan era is famous for the flourishing of English drama, led by playwrights such as William Shakespeare and Christopher Marlowe, the prowess of English maritime adventurers, such as Francis Drake and Walter Raleigh, and for the defeat of the Spanish Armada. Some historians depict Elizabeth as a short-tempered, sometimes indecisive ruler, who enjoyed more than her fair share of luck. Towards the end of her reign, a series of economic and military problems weakened her popularity. Elizabeth is acknowledged as a charismatic performer and a dogged survivor in an era when government was ramshackle and limited, and when monarchs in neighbouring countries faced internal problems and religious civil wars that jeopardised their thrones. After the short, disastrous reigns of her half-siblings, her 44 years on the throne provided welcome stability for the kingdom and helped to forge a sense of national identity.\\n\\n\\n== Early life ==\\n\\nElizabeth was born at Greenwich Palace on 7 September 1533 and was named after her grandmothers, Elizabeth of York and Lady Elizabeth Howard. She was the second child of Henry VIII of England born in wedlock to survive infancy. Her mother was Henry VIII\u0027s second wife, Anne Boleyn. At birth, Elizabeth was the heir presumptive to the English throne. Her elder half-sis\", \u0027source\u0027: \u0027https://en.wikipedia.org/wiki/Elizabeth_I\u0027, \u0027title\u0027: \u0027Elizabeth I\u0027}"}, {"color": "#97c2fc", "id": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:16", "label": "Country, __Entity__", "shape": "dot", "title": "{\u0027id\u0027: \u0027Netherlands\u0027}"}, {"color": "#97c2fc", "id": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:17", "label": "Country, __Entity__", "shape": "dot", "title": "{\u0027id\u0027: \u0027France\u0027}"}, {"color": "#97c2fc", "id": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:18", "label": "Country, __Entity__", "shape": "dot", "title": "{\u0027id\u0027: \u0027Spain\u0027}"}, {"color": "#97c2fc", "id": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:19", "label": "Person, __Entity__", "shape": "dot", "title": "{\u0027id\u0027: \u0027William Shakespeare\u0027}"}, {"color": "#97c2fc", "id": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:20", "label": "Person, __Entity__", "shape": "dot", "title": "{\u0027id\u0027: \u0027Christopher Marlowe\u0027}"}, {"color": "#97c2fc", "id": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:21", "label": "Person, __Entity__", "shape": "dot", "title": "{\u0027id\u0027: \u0027Francis Drake\u0027}"}]);
+                  edges = new vis.DataSet([{"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:0", "label": "MENTIONS", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:1"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:0", "label": "MENTIONS", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:2"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:0", "label": "MENTIONS", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:3"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:0", "label": "MENTIONS", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:4"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:0", "label": "MENTIONS", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:5"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:0", "label": "MENTIONS", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:6"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:0", "label": "MENTIONS", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:7"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:0", "label": "MENTIONS", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:8"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:0", "label": "MENTIONS", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:9"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:0", "label": "MENTIONS", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:10"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:0", "label": "MENTIONS", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:11"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:0", "label": "MENTIONS", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:12"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:0", "label": "MENTIONS", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:13"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:1", "label": "CHILD", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:2"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:1", "label": "CHILD", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:3"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:1", "label": "SIBLING", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:4"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:1", "label": "SIBLING", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:6"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:1", "label": "ADVISER", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:7"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:1", "label": "COUSIN", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:8"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:1", "label": "COUSIN", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:79"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:1", "label": "MEMBER", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:10"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:1", "label": "QUEEN", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:11"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:1", "label": "QUEEN", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:12"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:1", "label": "SUPREME_GOVERNOR", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:13"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:2", "label": "FATHER", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:15"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:2", "label": "MONARCH_OF", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:10"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:2", "label": "PARENT", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:66"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:3", "label": "MOTHER", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:15"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:4", "label": "MONARCH_OF", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:10"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:10", "label": "DESCENDED_FROM", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:61"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:10", "label": "DESCENDED_FROM", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:62"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:10", "label": "DESCENDED_FROM", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:63"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:10", "label": "DESCENDED_FROM", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:64"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:10", "label": "SUCCEEDED", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:67"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:10", "label": "UNITED_WITH", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:76"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:10", "label": "ASSERTED_AUTHORITY_OVER", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:71"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:10", "label": "CLAIMED", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:77"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:14", "label": "MENTIONS", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:2"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:14", "label": "MENTIONS", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:3"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:14", "label": "MENTIONS", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:11"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:14", "label": "MENTIONS", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:12"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:14", "label": "MENTIONS", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:15"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:14", "label": "MENTIONS", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:16"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:14", "label": "MENTIONS", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:17"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:14", "label": "MENTIONS", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:18"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:14", "label": "MENTIONS", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:19"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:14", "label": "MENTIONS", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:20"}, {"from": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:14", "label": "MENTIONS", "to": "4:737a4504-02fd-4a57-8f18-4a8065cc0f24:21"}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "enabled": true,
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>
