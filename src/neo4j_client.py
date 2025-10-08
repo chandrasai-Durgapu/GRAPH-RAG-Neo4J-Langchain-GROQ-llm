@@ -1,8 +1,10 @@
 from neo4j import GraphDatabase
 from configuration.config import NEO4J_URL, NEO4J_USERNAME, NEO4J_PASSWORD
 from logger.logger import get_logger
+import re
 
 logger = get_logger("Neo4jClient")
+
 
 class Neo4jClient:
     """
@@ -19,7 +21,7 @@ class Neo4jClient:
                 auth=(NEO4J_USERNAME, NEO4J_PASSWORD)
             )
             logger.info("Neo4j driver initialized successfully.")
-        except Exception as e:
+        except Exception:
             logger.error("Failed to initialize Neo4j driver.", exc_info=True)
             raise
 
@@ -48,7 +50,7 @@ class Neo4jClient:
                 records = [record.data() for record in result]
                 logger.debug(f"Query ran successfully: {query}")
                 return records
-        except Exception as e:
+        except Exception:
             logger.error(f"Error running query: {query}", exc_info=True)
             return []
 
@@ -66,3 +68,89 @@ class Neo4jClient:
         LIMIT 10
         """
         return self.run_query(query)
+
+    def sanitize_label(self, label):
+        """
+        Sanitize label or relationship type to be Cypher-safe (no dashes, special chars).
+        """
+        return re.sub(r'[^A-Za-z0-9_]', '_', label)
+
+    def add_graph_documents(self, graph_documents, baseEntityLabel=True, include_source=True):
+        """
+        Add graph documents (nodes and relationships) to the Neo4j database.
+
+        Args:
+            graph_documents: List of graph documents (nodes + relationships).
+            baseEntityLabel (bool): Optionally apply special label treatment.
+            include_source (bool): Whether to store source in the DB (future use).
+        """
+        try:
+            with self.driver.session() as session:
+                for doc in graph_documents:
+
+                    # Add nodes
+                    for node in getattr(doc, 'nodes', []):
+                        if hasattr(node, "dict"):
+                            node_data = node.dict()
+                        elif isinstance(node, dict):
+                            node_data = node
+                        else:
+                            logger.warning(f"Unknown node format: {node}")
+                            continue
+
+                        properties = node_data.get("properties", {})
+                        labels = node_data.get("labels", [])
+
+                        node_id = properties.get("id")
+                        if not node_id:
+                            logger.warning(f"Skipping node with missing ID: {properties}")
+                            continue
+
+                        # Sanitize and join labels
+                        safe_labels = ":".join([self.sanitize_label(l) for l in labels])
+                        if not safe_labels:
+                            safe_labels = "Entity"
+
+                        query = f"""
+                        MERGE (n:{safe_labels} {{id: $id}})
+                        SET n += $props
+                        """
+                        session.run(query, {"id": node_id, "props": properties})
+
+                    # Add relationships
+                    for rel in getattr(doc, 'relationships', []):
+                        if hasattr(rel, "dict"):
+                            rel_data = rel.dict()
+                        elif isinstance(rel, dict):
+                            rel_data = rel
+                        else:
+                            logger.warning(f"Unknown relationship format: {rel}")
+                            continue
+
+                        rel_type = rel_data.get("type", "RELATED_TO")
+                        rel_props = rel_data.get("properties", {})
+                        source_id = rel_data.get("source_id")
+                        target_id = rel_data.get("target_id")
+
+                        if not source_id or not target_id:
+                            logger.warning(f"Skipping relationship with missing endpoints: {rel_data}")
+                            continue
+
+                        # Sanitize relationship type
+                        safe_rel_type = self.sanitize_label(rel_type)
+
+                        query = f"""
+                        MATCH (a {{id: $source_id}}), (b {{id: $target_id}})
+                        MERGE (a)-[r:{safe_rel_type}]->(b)
+                        SET r += $props
+                        """
+                        session.run(query, {
+                            "source_id": source_id,
+                            "target_id": target_id,
+                            "props": rel_props
+                        })
+
+                logger.info("Graph documents ingested into Neo4j.")
+
+        except Exception:
+            logger.error("Error while adding graph documents to Neo4j.", exc_info=True)

@@ -1,7 +1,7 @@
-from src.wikipedia_loader import load_wikipedia_docs
+from wikipedia_loader import load_wikipedia_docs
 from data_ingestion.graph_ingestion import ingest_documents_to_neo4j
-from src.neo4j_client import Neo4jClient
-from src.qa_chain import answer_question
+from neo4j_client import Neo4jClient
+from qa_chain import answer_question
 from logger.logger import get_logger
 from visualization import visualize_neo4j_graph
 

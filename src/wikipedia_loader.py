@@ -1,4 +1,5 @@
-from langchain.document_loaders import WikipediaLoader
+
+from langchain_community.document_loaders import WikipediaLoader
 from langchain.text_splitter import TokenTextSplitter
 from logger.logger import get_logger
 

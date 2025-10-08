@@ -3,9 +3,9 @@ from typing import List
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Neo4jVector
 from configuration.config import NEO4J_URL, NEO4J_USERNAME, NEO4J_PASSWORD
-from src.entity_extractor import extract_entities
+from entity_extractor import extract_entities
 from logger.logger import get_logger
-from src.neo4j_client import Neo4jClient
+from neo4j_client import Neo4jClient
 
 logger = get_logger("Retriever")
 

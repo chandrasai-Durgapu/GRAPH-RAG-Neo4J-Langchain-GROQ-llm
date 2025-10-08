@@ -1,7 +1,7 @@
 from langchain_experimental.graph_transformers import LLMGraphTransformer
 from langchain_groq import ChatGroq
 from configuration.config import GROQ_API_KEY
-from src.neo4j_client import Neo4jClient
+from neo4j_client import Neo4jClient
 from logger.logger import get_logger
 
 logger = get_logger("GraphIngestor")
@@ -31,8 +31,8 @@ def ingest_documents_to_neo4j(documents):
     try:
         logger.debug("Creating Neo4j constraints and indexes...")
 
-        neo4j_client.run_query("CREATE CONSTRAINT IF NOT EXISTS ON (d:Document) ASSERT d.id IS UNIQUE")
-        neo4j_client.run_query("CREATE FULLTEXT INDEX entity IF NOT EXISTS FOR (n) ON EACH [n.name, n.text]")
+        neo4j_client.run_query("CREATE CONSTRAINT document_id_unique IF NOT EXISTS FOR (d:Document) REQUIRE d.id IS UNIQUE")
+        neo4j_client.run_query("CREATE FULLTEXT INDEX entity IF NOT EXISTS FOR (n:Entity) ON EACH [n.name, n.text]")
 
         logger.debug("Ingesting graph documents into Neo4j...")
         neo4j_client.add_graph_documents(
