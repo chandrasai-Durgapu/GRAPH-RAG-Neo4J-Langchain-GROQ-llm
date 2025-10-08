@@ -60,4 +60,4 @@ def answer_question(question: str, chat_history=None):
         return response
     except Exception as e:
         logger.error(f"Error during chain invocation: {e}", exc_info=True)
-        return "⚠️ Sorry, an error occurred while processing your question."
+        return " Sorry, an error occurred while processing your question."

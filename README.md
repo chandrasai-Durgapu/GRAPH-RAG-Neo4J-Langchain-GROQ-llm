@@ -84,7 +84,11 @@ NEO4J_PASSWORD=your_password
 GROQ_API_KEY=your_groq_api_key
 ```
 ---
-
-
+## Run the Test Application
+```bash
+python test.py
+```
+---
+FastAPI part is pending
 
 
