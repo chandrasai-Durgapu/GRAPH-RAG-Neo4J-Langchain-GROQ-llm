@@ -16,7 +16,7 @@ from langchain_neo4j import Neo4jGraph
 from langchain_groq import ChatGroq
 
 from logger.logger import get_logger  # Your custom logger module
-
+from src.visualization import visualize_neo4j_graph
 
 # === Load environment variables ===
 load_dotenv()
@@ -386,6 +386,13 @@ if __name__ == "__main__":
 
         logger.info("Ingesting graph data to Neo4j...")
         ingest_graph(split_docs)
+        try:
+            logger.info("Visualizing Neo4j graph...")
+            visualize_neo4j_graph(limit=100)
+            logger.info("Visualization completed.")
+        except Exception as e:
+            logger.error(f"Failed to visualize graph: {e}", exc_info=True)
+            logger.info("Running example questions...")
 
         # Simple query without chat history
         question1 = "Which house did Elizabeth I belong to?"

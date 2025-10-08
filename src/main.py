@@ -3,6 +3,8 @@ from data_ingestion.graph_ingestion import ingest_documents_to_neo4j
 from src.neo4j_client import Neo4jClient
 from src.qa_chain import answer_question
 from logger.logger import get_logger
+from visualization import visualize_neo4j_graph
+
 
 logger = get_logger("Main")
 
@@ -21,8 +23,14 @@ def main():
         logger.info("Ingesting documents into Neo4j...")
         ingest_documents_to_neo4j(docs)
         logger.info("Data ingestion complete.")
-
-        logger.info("Running example questions...")
+        # After ingestion, visualize graph
+        try:
+            logger.info("Visualizing Neo4j graph...")
+            visualize_neo4j_graph(limit=100)
+            logger.info("Visualization completed.")
+        except Exception as e:
+            logger.error(f"Failed to visualize graph: {e}", exc_info=True)
+            logger.info("Running example questions...")
 
         question1 = "Which house did Elizabeth I belong to?"
         answer1 = answer_question(question1)
