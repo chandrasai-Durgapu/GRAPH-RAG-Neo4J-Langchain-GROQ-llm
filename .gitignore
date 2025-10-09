@@ -210,4 +210,6 @@ __marimo__/
 .env/
 graph-rag-01/
 
+logs/
+
 

@@ -19,7 +19,7 @@ def visualize_neo4j_graph(limit=100):
         LIMIT {limit}
         """
         
-        records = neo44j_client.run_query(query) 
+        records = neo4j_client.run_query(query) 
         logger.info(f"Retrieved {len(records)} relationships from Neo4j")
 
         net = Network(notebook=True, directed=True)

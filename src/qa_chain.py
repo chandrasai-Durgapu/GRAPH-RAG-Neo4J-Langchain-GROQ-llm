@@ -3,10 +3,12 @@ from langchain_core.runnables import RunnableParallel, RunnablePassthrough, Runn
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from question_condence import _search_query
-# FIX: Import the graph dependency object (assumed to be named 'neo4j_graph')
-from data_retrival.retriever import retriever, neo4j_graph 
+
+
 from langchain_groq import ChatGroq
 from logger.logger import get_logger
+from data_retrival.retriever import retriever
+from neo4j_client import neo4j_graph 
 
 logger = get_logger("Answer chain")
 

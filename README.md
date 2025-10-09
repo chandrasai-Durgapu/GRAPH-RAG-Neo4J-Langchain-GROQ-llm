@@ -78,7 +78,7 @@ pip install -r requirements.txt
 ---
 ## Create .env File
 ```bash
-NEO4J_URL=bolt://localhost:7687
+NEO4J_URL=neo4j://127.0.0.1:7687
 NEO4J_USERNAME=neo4j
 NEO4J_PASSWORD=your_password
 GROQ_API_KEY=your_groq_api_key
